@@ -25,7 +25,7 @@ namespace BTE_group_net_worker.Queries
             try
             {
                 Query query = _db.AsQuery<Equipo>();
-                query.Select("Id AS Maquina", "Proceso", "SubProceso", "Planta", "Sucursal" );
+                query.Select("Id AS Maquina", "Proceso", "SubProceso", "Planta", "Sucursal", "TipoProceso" );
                 var result = await _db.QueryAsync<EquipoVM>(query, connectionString);
                 return result.ToList();
             }
@@ -40,7 +40,7 @@ namespace BTE_group_net_worker.Queries
             try
             {
                 Query query = _db.AsQuery<Equipo>();
-                query.Select("Id AS Maquina", "Proceso", "SubProceso", "Planta", "Sucursal");
+                query.Select("Id AS Maquina", "Proceso", "SubProceso", "Planta", "Sucursal", "TipoProceso");
                 query.Where("Id", maquina);
                 var result = await _db.QueryFirstAsync<EquipoVM>(query, connectionString);
                 return result;

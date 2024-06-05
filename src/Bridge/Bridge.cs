@@ -207,7 +207,8 @@ namespace BTE_group_net_worker.Bridge
                     UNetoPlan = TiempoDisponiblePlan == 0 ? 0 : TiempoNetoPlan / TiempoDisponiblePlan,
                     UNetoReal = TiempoDisponibleReal == 0 ? 0 :TiempoNetoReal / TiempoDisponibleReal,
                     PNetaMixReal = PNetaMixReal,
-                    PNetaMixEstandar = PNetaMixRealEstandar
+                    PNetaMixEstandar = PNetaMixRealEstandar,
+                    TipoProceso = maquina.TipoProceso
                 };
                 if (existe)
                 {
