@@ -15,7 +15,6 @@ namespace BTE_group_net_worker.Models
             _configuration = configuration;
             this.Hostname = _configuration["Socket:Hostname"];
             this.Port = int.TryParse(_configuration["Socket:Port"], out int puerto) ? puerto : 80;
-
         }
 
         public string Hostname { get; set; }

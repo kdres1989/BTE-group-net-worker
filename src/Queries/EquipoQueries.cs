@@ -3,11 +3,6 @@ using BTE_group_net_worker.Core.Interface.Queries;
 using BTE_group_net_worker.Models;
 using BTE_group_net_worker.Models.VisualModels;
 using SqlKata;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BTE_group_net_worker.Queries
 {
@@ -25,7 +20,8 @@ namespace BTE_group_net_worker.Queries
             try
             {
                 Query query = _db.AsQuery<Equipo>();
-                query.Select("Id AS Maquina", "Proceso", "SubProceso", "Planta", "Sucursal", "TipoProceso" );
+                query.Select("Id AS Maquina", "Proceso", "SubProceso", "Planta", "Sucursal", "TipoProceso", "TipoSubProceso", "Estado");
+                query.Where("Estado", true);
                 var result = await _db.QueryAsync<EquipoVM>(query, connectionString);
                 return result.ToList();
             }
@@ -35,15 +31,16 @@ namespace BTE_group_net_worker.Queries
             }
         }
 
-        public async Task<EquipoVM> GetMaquinasById(int maquina, string connectionString)
+        public async Task<List<EquipoVM>> GetMaquinasById(List<int> maquina, string connectionString)
         {
             try
             {
                 Query query = _db.AsQuery<Equipo>();
-                query.Select("Id AS Maquina", "Proceso", "SubProceso", "Planta", "Sucursal", "TipoProceso");
-                query.Where("Id", maquina);
-                var result = await _db.QueryFirstAsync<EquipoVM>(query, connectionString);
-                return result;
+                query.Select("Id AS Maquina", "Proceso", "SubProceso", "Planta", "Sucursal", "TipoProceso", "TipoSubProceso", "Estado");
+                query.WhereIn("Id", maquina);
+                query.Where("Estado", true);
+                var result = await _db.QueryAsync<EquipoVM>(query, connectionString);
+                return result.ToList();
             }
             catch
             {

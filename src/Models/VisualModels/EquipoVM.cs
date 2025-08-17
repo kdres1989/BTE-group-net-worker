@@ -14,5 +14,7 @@ namespace BTE_group_net_worker.Models.VisualModels
         public int Planta { get; set; }
         public int Sucursal { get; set; }
         public int TipoProceso { get; set; }
+        public int TipoSubProceso { get; set; }
+        public bool Estado { get; set; }
     }
 }

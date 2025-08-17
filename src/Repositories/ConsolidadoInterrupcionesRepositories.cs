@@ -39,7 +39,6 @@ namespace BTE_group_net_worker.Repositories
                 sqlString.AppendFormat("DELETE FROM consolidadointerrupciones  WHERE Fecha = '{0}' and Maquina = {1};", Fecha.ToString("yyyy-MM-dd HH:mm:ss"), Maquina);
                 sqlString.AppendLine();
                 sqlString.AppendFormat("DELETE FROM consolidadoparadas WHERE Fecha = '{0}' and Maquina = {1}", Fecha.ToString("yyyy-MM-dd HH:mm:ss"), Maquina);
-                //Console.WriteLine(sqlString.ToString());
                 await _db.ExecuteScalarAsync(sqlString.ToString(), connectionString);
                 rs = true;
             }
