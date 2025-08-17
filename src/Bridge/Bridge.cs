@@ -3,9 +3,6 @@ using BTE_group_net_worker.Core.Interface.Queries;
 using BTE_group_net_worker.Core.Interface.Repositories;
 using BTE_group_net_worker.Models;
 using BTE_group_net_worker.Models.VisualModels;
-using Microsoft.AspNetCore.Http;
-using System.ComponentModel;
-using System.Security.Cryptography;
 
 namespace BTE_group_net_worker.Bridge
 {
@@ -25,12 +22,13 @@ namespace BTE_group_net_worker.Bridge
         private readonly IConsolidadoRepositories _consolidadoRepositories;
         private readonly IConsolidadoInterrupcionesRepositories _consolidadoInterrupcionesRepositories;
         private readonly IConsolidadoParadasRepositories _consolidadoParadasRepositories;
+        private readonly IHombrePlanQueries _hombrePlanQueries;
 
         public Bridge(ILogger<Bridge> logger, IParametroQueries parametroQueries, IParametroRepositories parametroRepositories, 
                       IEmpresaQueries empresaQueries, IEquipoQueries equipoQueries, ITiempoQueries tiempoQueries, IPlanParadasQueries planParadasQueries,
                       IPlanInterrupcionesQueries planInterrupcionesQueries, IPlanProduccionQueries planProduccionQueries, IProduccionQueries produccionQueries,
                       IConsolidadoQueries consolidadoQueries, IConsolidadoRepositories consolidadoRepositories, IConsolidadoInterrupcionesRepositories consolidadoInterrupcionesRepositories,
-                      IConsolidadoParadasRepositories consolidadoParadasRepositories)
+                      IConsolidadoParadasRepositories consolidadoParadasRepositories, IHombrePlanQueries hombrePlanQueries)
         {
             _logger = logger;
             _parametroQueries = parametroQueries;
@@ -46,44 +44,60 @@ namespace BTE_group_net_worker.Bridge
             _consolidadoRepositories = consolidadoRepositories;
             _consolidadoInterrupcionesRepositories = consolidadoInterrupcionesRepositories;
             _consolidadoParadasRepositories = consolidadoParadasRepositories;
+            _hombrePlanQueries = hombrePlanQueries;
         }
 
         public async Task Run()
         {
-            if(DateTime.Now.Hour == 23)
+            try
             {
-                string format = "dd/MM/yyyy HH:mm:ss";
-                Parametro parametro = await _parametroQueries.GetParametroByNombre("FechaUltimaEjecucionWorker");
-                DateTime fechaActual = DateTime.Today;
-                DateTime fechaUltimaEjecucion = DateTime.TryParseExact(parametro.Valor, format, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime parsedDateTime) ? parsedDateTime : DateTime.Today.AddDays(-1);
-                if (fechaActual > fechaUltimaEjecucion)
+                if (DateTime.Now.Hour == 23)
                 {
-                    List<string> conexionEmpresas = await _empresaQueries.GetConexionEmpresas();
-                    foreach(string conexion in conexionEmpresas)
+                    string format = "dd/MM/yyyy HH:mm:ss";
+                    Parametro parametro = await _parametroQueries.GetParametroByNombre("FechaUltimaEjecucionWorker");
+                    DateTime fechaActual = DateTime.Today;
+                    DateTime fechaUltimaEjecucion = DateTime.TryParseExact(parametro.Valor, format, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime parsedDateTime) ? parsedDateTime : DateTime.Today.AddDays(-1);
+                    if (fechaActual > fechaUltimaEjecucion)
                     {
-                        List<EquipoVM> maquinas = await _equipoQueries.GetMaquinas(conexion);
-                        foreach(EquipoVM maquina in maquinas)
+                        List<string> conexionEmpresas = await _empresaQueries.GetConexionEmpresas();
+                        foreach (string conexion in conexionEmpresas)
                         {
-                            await Calculos(conexion, maquina, fechaActual);
+                            List<EquipoVM> maquinas = await _equipoQueries.GetMaquinas(conexion);
+                            foreach (EquipoVM maquina in maquinas)
+                            {
+                                await Calculos(conexion, maquina, fechaActual);
+                            }
                         }
+                        parametro.Valor = fechaActual.ToString("dd/MM/yyyy HH:mm:ss");
+                        await _parametroRepositories.Update(parametro);
                     }
-                    parametro.Valor = fechaActual.ToString("dd/MM/yyyy HH:mm:ss");
-                    await _parametroRepositories.Update(parametro);
-                }
 
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error");
             }
         }
         public async Task RunManual(ManualRequest manualRequest)
         {
-            string conexion = await _empresaQueries.GetConexionbyId(manualRequest.Empresa);
-            foreach (int idMaquina in manualRequest.Maquinas)
+            try
             {
-                EquipoVM maquina = await _equipoQueries.GetMaquinasById(idMaquina, conexion);
-                for (DateTime fecha = manualRequest.FechaInicio; fecha <= manualRequest.FechaFin; fecha = fecha.AddDays(1))
+                string conexion = await _empresaQueries.GetConexionbyId(manualRequest.Empresa);
+                List<EquipoVM> maquinas = await _equipoQueries.GetMaquinasById(manualRequest.Maquinas, conexion);
+                foreach (EquipoVM maquina in maquinas)
                 {
-                    await Calculos(conexion, maquina, fecha);
+                    for (DateTime fecha = manualRequest.FechaInicio; fecha <= manualRequest.FechaFin; fecha = fecha.AddDays(1))
+                    {
+                        await Calculos(conexion, maquina, fecha);
+                    }
                 }
             }
+            catch (Exception ex) 
+            {
+                Console.WriteLine("Error");
+            }
+            
         }
 
 
@@ -181,6 +195,8 @@ namespace BTE_group_net_worker.Bridge
                 ProduccionReal /= 1000;
                 double PNetaReal = TiempoNetoReal == 0 ? 0 : ProduccionReal / TiempoNetoReal;
 
+                HombrePlanVM hombres = await _hombrePlanQueries.GetHombresbyFechaMaquina(maquina.Maquina, fecha, conexion);
+
                 Consolidado consolidado = await _consolidadoQueries.ConsolidadpByFechaAndMaquina(fecha, maquina.Maquina, conexion);
                 bool existe = consolidado != null;
                 Consolidado nuevoconsolidado = new()
@@ -207,7 +223,11 @@ namespace BTE_group_net_worker.Bridge
                     UNetoPlan = TiempoDisponiblePlan == 0 ? 0 : TiempoNetoPlan / TiempoDisponiblePlan,
                     UNetoReal = TiempoDisponibleReal == 0 ? 0 :TiempoNetoReal / TiempoDisponibleReal,
                     PNetaMixReal = PNetaMixReal,
-                    PNetaMixEstandar = PNetaMixRealEstandar
+                    PNetaMixEstandar = PNetaMixRealEstandar,
+                    TipoProceso = maquina.TipoProceso,
+                    TipoSubProceso = maquina.TipoSubProceso,
+                    HombresPlan = hombres == null ? 0 : hombres.PersonasPlan == null ? 0 : hombres.PersonasPlan,
+                    HombresReal = hombres == null ? 0 : hombres.PersonasReal == null ? 0 : hombres.PersonasReal,
                 };
                 if (existe)
                 {
@@ -227,7 +247,7 @@ namespace BTE_group_net_worker.Bridge
             {
                 Console.WriteLine("Error");
             }
-                return Errores;
+            return Errores;
             
         }
 

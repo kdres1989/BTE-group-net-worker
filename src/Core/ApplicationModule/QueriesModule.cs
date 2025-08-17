@@ -41,6 +41,9 @@ namespace BTE_group_net.Infrastructure.AutoFacModules
             builder.RegisterType<ConsolidadoQueries>()
                 .As<IConsolidadoQueries>()
                 .InstancePerLifetimeScope();
+            builder.RegisterType<HombrePlanQueries>()
+                .As<IHombrePlanQueries>()
+                .InstancePerLifetimeScope();
         }
     }
 }

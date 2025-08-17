@@ -30,6 +30,10 @@ namespace BTE_group_net_worker.Models
         public double UNetoReal { get; set; }
         public double PNetaMixReal { get; set; }
         public double PNetaMixEstandar { get; set; }
+        public int TipoProceso { get; set; }
+        public int TipoSubProceso { get; set; }
+        public int HombresPlan { get; set; }
+        public int HombresReal { get; set; }
 
     }
 }
