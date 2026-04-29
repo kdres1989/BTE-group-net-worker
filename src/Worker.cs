@@ -19,7 +19,7 @@ namespace BTE_group_net_worker
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                 await _bridge.Run();
-                await Task.Delay(60000, stoppingToken);
+                await Task.Delay(1800000, stoppingToken);
             }
         }
     }

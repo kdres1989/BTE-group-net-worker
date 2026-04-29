@@ -76,7 +76,7 @@ namespace BTE_group_net_worker.Bridge
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error");
+                Console.WriteLine(ex.Message);
             }
         }
         public async Task RunManual(ManualRequest manualRequest)
@@ -95,12 +95,10 @@ namespace BTE_group_net_worker.Bridge
             }
             catch (Exception ex) 
             {
-                Console.WriteLine("Error");
+                Console.WriteLine(ex.Message);
             }
             
         }
-
-
 
         private async Task<List<string>> Calculos(string conexion, EquipoVM maquina, DateTime fecha)
         {
@@ -134,7 +132,8 @@ namespace BTE_group_net_worker.Bridge
                                                                         Fecha = fecha,
                                                                         TiempoReal = paradasReal != null ? paradasReal.Duracion : 0,
                                                                         TiempoPlan = paradasPlan != null ? paradasPlan.Duracion : 0,
-                                                                    }).GroupBy(r => new { r.Codigo }).Select(grp => grp.First()).ToList();
+                                                                    }
+                                                               ).GroupBy(r => new { r.Codigo }).Select(grp => grp.First()).ToList();
 
                 double tdp = consolidadoParadas.Sum(cp => cp.TiempoPlan);
                 double tdr = consolidadoParadas.Sum(cp => cp.TiempoReal);
@@ -172,7 +171,8 @@ namespace BTE_group_net_worker.Bridge
                                                                                         Fecha = fecha,
                                                                                         TiempoReal = inteReal != null ? inteReal.Duracion : 0,
                                                                                         TiempoPlan = intePlan != null ? intePlan.Duracion : 0,
-                                                                                    }).GroupBy(r => new { r.Codigo }).Select(grp => grp.First()).ToList();
+                                                                                    }
+                                                                             ).GroupBy(r => new { r.Codigo }).Select(grp => grp.First()).ToList();
                 double TiempoNetoPlan = TiempoDisponiblePlan - (intePlanes.Sum(ci => (ci.Duracion * TiempoDisponiblePlan)));
                 double TiempoNetoReal = TiempoDisponibleReal - (consolidadoInterrupciones.Sum(ci => ci.TiempoReal));
 
@@ -241,11 +241,12 @@ namespace BTE_group_net_worker.Bridge
                 }
                 await _consolidadoInterrupcionesRepositories.DeleteMultiple(maquina.Maquina, fecha, conexion);
                 await _consolidadoInterrupcionesRepositories.BulkInsert(consolidadoInterrupciones, conexion);
-                await _consolidadoParadasRepositories.BulkInsert(consolidadoParadas, conexion);  
+                await _consolidadoParadasRepositories.BulkInsert(consolidadoParadas, conexion);
+                Console.WriteLine($"Se Proceso correctamente la consolidacion para la Maquina ${maquina.Maquina} en la fecha {fecha}");
             }
-            catch
+            catch (Exception ex)
             {
-                Console.WriteLine("Error");
+                Console.WriteLine(ex.Message);
             }
             return Errores;
             
